@@ -1,0 +1,30 @@
+model:
+  id: "google/gemma-4-E4B-it"
+  use_4bit: true
+
+dataset:
+  name: "openai/gsm8k"
+  config: "main"
+  train_split: "train"
+  test_split: "test"
+  max_samples_pilot: 200
+
+training:
+  learning_rate: 2.0e-4
+  epochs: 3
+  batch_size: 2
+  gradient_accumulation_steps: 4
+  max_length: 512
+  warmup_ratio: 0.1
+  weight_decay: 0.01
+
+adapter:
+  r: 8
+  alpha: 16
+  dropout: 0.05
+  target_modules: ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+
+evaluation:
+  max_new_tokens: 256
+  temperature: 0.0
+  do_sample: false

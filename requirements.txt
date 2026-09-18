@@ -1,0 +1,16 @@
+torch>=2.2.0
+transformers>=4.40.0
+peft>=0.10.0
+datasets>=2.18.0
+bitsandbytes>=0.43.0
+accelerate>=0.29.0
+trl>=0.8.1
+wandb>=0.16.4
+fastapi>=0.110.0
+uvicorn>=0.29.0
+gradio>=4.26.0
+pyyaml>=6.0.1
+pandas>=2.2.1
+matplotlib>=3.8.4
+seaborn>=0.13.2
+pytest>=8.1.1
