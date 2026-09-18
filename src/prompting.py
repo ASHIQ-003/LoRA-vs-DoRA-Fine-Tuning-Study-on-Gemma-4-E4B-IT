@@ -1,28 +1,33 @@
+import re
+
 def build_gsm8k_prompt(question: str) -> str:
     """
-    Builds a consistent prompt for GSM8K.
-    We format it without the final answer for generation/inference.
+    Builds a canonical prompt for GSM8K.
+    Used for baseline, LoRA, DoRA, and evaluation consistently.
     """
-    # For Gemma 4 E4B, we assume standard user/assistant structure if using chat template.
-    # We will format this into a dictionary format and let the tokenizer's chat template handle it,
-    # OR we can manually construct it if we want strict control over special tokens.
-    # Since we need exact control over loss, let's use the standard Gemma text format.
-    # Gemma uses <start_of_turn>user\n ... <end_of_turn>\n<start_of_turn>model\n ... <end_of_turn>
     return f"<start_of_turn>user\n{question}<end_of_turn>\n<start_of_turn>model\n"
+
+def normalize_number(num_str: str) -> str:
+    """
+    Normalizes a number string by removing commas and handling decimal points.
+    """
+    num_str = num_str.replace(",", "")
+    if "." in num_str:
+        # Strip trailing zeros and decimal if it becomes integer
+        num_str = num_str.rstrip("0").rstrip(".")
+    return num_str
 
 def extract_final_answer(generated_text: str) -> str:
     """
     Robustly extracts the final answer from GSM8K generations.
-    GSM8K gold answers end with `#### [number]`.
-    Generations might have `#### [number]` or just a number at the end.
     """
     if "####" in generated_text:
-        return generated_text.split("####")[-1].strip()
+        ans = generated_text.split("####")[-1].strip()
+        return normalize_number(ans)
     
     # Fallback heuristic: find the last number in the text
-    import re
-    numbers = re.findall(r'-?\d+\.?\d*', generated_text)
+    numbers = re.findall(r'-?\d+(?:,\d+)*(?:\.\d+)?', generated_text)
     if numbers:
-        return numbers[-1]
+        return normalize_number(numbers[-1])
     
     return ""
