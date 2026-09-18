@@ -10,8 +10,6 @@ def get_disk_usage(path):
 
 def setup_kaggle_env():
     """Sets up the environment specifically for Kaggle Notebooks."""
-    # Kaggle specific paths
-    # We want to use /kaggle/tmp for HF cache to not burn the 20GB /kaggle/working limit
     kaggle_tmp = "/kaggle/tmp"
     
     if os.path.exists("/kaggle"):
@@ -19,7 +17,7 @@ def setup_kaggle_env():
         cache_dir = os.path.join(kaggle_tmp, "huggingface")
         os.makedirs(cache_dir, exist_ok=True)
     else:
-        # Fallback for non-Kaggle (e.g. testing the script locally, though it will fail later)
+        # Fallback for non-Kaggle
         cache_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".cache", "huggingface")
         os.makedirs(cache_dir, exist_ok=True)
         
@@ -27,13 +25,27 @@ def setup_kaggle_env():
     os.environ["HF_HUB_CACHE"] = cache_dir
     return cache_dir
 
+def get_hf_token():
+    """Retrieves HF_TOKEN from Kaggle Secrets if available, otherwise from env."""
+    try:
+        from kaggle_secrets import UserSecretsClient
+        user_secrets = UserSecretsClient()
+        token = user_secrets.get_secret("HF_TOKEN")
+        if token:
+            print("Retrieved HF_TOKEN from Kaggle Secrets.")
+            os.environ["HF_TOKEN"] = token
+            return token
+    except ImportError:
+        pass
+    except Exception as e:
+        print(f"Failed to read Kaggle Secret HF_TOKEN: {e}")
+        
+    return os.environ.get("HF_TOKEN")
+
 def run_kaggle_smoke_test():
     results = {}
     
     print("\n--- KAGGLE SMOKE TEST DIAGNOSTICS ---")
-    # ------------------------------------
-    # Environment & Storage
-    # ------------------------------------
     print(f"Python: {sys.version.split()[0]}")
     results["Environment"] = "PASS"
     
@@ -43,17 +55,12 @@ def run_kaggle_smoke_test():
     free_gb = get_disk_usage(cache_dir)
     print(f"Available disk space for cache: {free_gb:.2f} GB")
     
-    # Gemma 4 E4B is ~16GB. We need at least that much. 
-    # Give a bit of buffer, say 18GB.
     if free_gb < 18.0:
         print("WARNING: Insufficient disk space! Model download may fail.")
         results["Storage"] = "FAIL"
     else:
         results["Storage"] = "PASS"
 
-    # ------------------------------------
-    # CUDA & GPU
-    # ------------------------------------
     import torch
     print(f"PyTorch version: {torch.__version__}")
     cuda_avail = torch.cuda.is_available()
@@ -72,17 +79,13 @@ def run_kaggle_smoke_test():
         print("No GPU detected.")
         results["GPU"] = "FAIL"
         
-    # ------------------------------------
-    # HF Authentication
-    # ------------------------------------
-    hf_token = os.environ.get("HF_TOKEN")
+    hf_token = get_hf_token()
     if not hf_token:
-        print("WARNING: HF_TOKEN environment variable not set. Gemma 4 download will likely fail.")
+        print("WARNING: HF_TOKEN not found in Kaggle Secrets or environment variables.")
         results["HF authentication"] = "FAIL"
     else:
         results["HF authentication"] = "PASS"
 
-    # Stop early if foundational checks fail
     if results["CUDA"] == "FAIL" or results["Storage"] == "FAIL" or results["HF authentication"] == "FAIL":
         print("\nFoundational check failed. Stopping smoke test.")
         print_matrix(results)
@@ -90,9 +93,6 @@ def run_kaggle_smoke_test():
 
     model_id = "google/gemma-4-E4B-it"
     
-    # ------------------------------------
-    # Gemma 4 processor
-    # ------------------------------------
     processor = None
     try:
         from transformers import AutoProcessor
@@ -102,9 +102,6 @@ def run_kaggle_smoke_test():
         results["Processor"] = "FAIL"
         print(f"Processor Error: {e}")
 
-    # ------------------------------------
-    # 4-bit loading & Gemma 4 model
-    # ------------------------------------
     model = None
     try:
         from transformers import AutoModelForMultimodalLM, BitsAndBytesConfig
@@ -128,17 +125,12 @@ def run_kaggle_smoke_test():
         results["4-bit loading"] = "FAIL"
         print(f"Model Error: {e}")
 
-    # ------------------------------------
-    # Generation
-    # ------------------------------------
     try:
         if model is not None and processor is not None:
-            # Add src to path if running directly from scripts
             sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
             from src.prompting import build_gsm8k_prompt
             
             prompt = build_gsm8k_prompt("If I have 2 apples and buy 3 more, how many apples do I have?")
-            # Assume text input to processor
             inputs = processor(text=prompt, return_tensors="pt").to(model.device)
             
             with torch.no_grad():
@@ -150,9 +142,6 @@ def run_kaggle_smoke_test():
         results["Generation"] = "FAIL"
         print(f"Generation Error: {e}")
 
-    # ------------------------------------
-    # LoRA adapter
-    # ------------------------------------
     try:
         if model is not None:
             from peft import LoraConfig, get_peft_model
@@ -162,7 +151,7 @@ def run_kaggle_smoke_test():
             if trainable_lora > 0:
                 print(f"LoRA Trainable Params: {trainable_lora}")
                 results["LoRA"] = "PASS"
-                model = model_lora.unload() # Restore base model
+                model = model_lora.unload()
             else:
                 results["LoRA"] = "FAIL"
         else:
@@ -171,9 +160,6 @@ def run_kaggle_smoke_test():
         results["LoRA"] = "FAIL"
         print(f"LoRA Error: {e}")
 
-    # ------------------------------------
-    # DoRA adapter
-    # ------------------------------------
     dora_success = False
     try:
         if model is not None:
@@ -194,16 +180,9 @@ def run_kaggle_smoke_test():
         results["DoRA"] = "FAIL"
         print(f"DoRA Error: {e}")
 
-    # ------------------------------------
-    # Tiny training step
-    # ------------------------------------
     try:
         if model is not None and dora_success:
-            # We'll do a mock backward pass
             inputs = processor(text="A quick test for loss.", return_tensors="pt").to(model.device)
-            # We can't easily compute cross_entropy without labels, but we can just forward pass 
-            # and check if we can compute gradients if labels were provided.
-            # MultimodalLM usually takes labels=inputs["input_ids"] for causal LM loss.
             inputs["labels"] = inputs["input_ids"].clone()
             
             outputs = model(**inputs)
@@ -216,9 +195,6 @@ def run_kaggle_smoke_test():
         results["Tiny training"] = "FAIL"
         print(f"Tiny training Error: {e}")
 
-    # ------------------------------------
-    # Adapter save/reload
-    # ------------------------------------
     try:
         if model is not None and dora_success:
             adapter_path = os.path.join(cache_dir, "temp_dora_adapter")
@@ -234,9 +210,6 @@ def run_kaggle_smoke_test():
         results["Save/reload"] = "FAIL"
         print(f"Save/Reload Error: {e}")
 
-    # ------------------------------------
-    # Evaluator
-    # ------------------------------------
     try:
         sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         from tests.test_evaluation import test_extract_final_answer, test_build_gsm8k_prompt
