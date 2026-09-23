@@ -1,0 +1,126 @@
+{
+  "model": {
+    "name": "google/gemma-4-E4B-it",
+    "architecture": "Mixture-of-Experts (MoE), multimodal, thinking-capable",
+    "quantization": "4-bit NF4 (BitsAndBytes)",
+    "parameters_total": "~4B active parameters"
+  },
+  "dataset": {
+    "name": "GSM8K",
+    "hf_path": "openai/gsm8k",
+    "config": "main",
+    "train_examples_used": 200,
+    "eval_examples_used": 20,
+    "eval_split": "test (first 20)",
+    "metric": "Exact-match accuracy on final numeric answer"
+  },
+  "methods": [
+    "LoRA",
+    "DoRA"
+  ],
+  "primary_ranks": [
+    8,
+    16
+  ],
+  "supplementary_ranks": [
+    4,
+    32
+  ],
+  "seeds": [
+    42,
+    123,
+    456
+  ],
+  "training": {
+    "max_steps": 20,
+    "learning_rate": "2e-4",
+    "batch_size": 2,
+    "gradient_accumulation_steps": 4,
+    "effective_batch_size": 8,
+    "precision": "BF16",
+    "warmup_ratio": 0.1,
+    "weight_decay": 0.01,
+    "max_sequence_length": 512,
+    "masking": "Completion-only (prompt tokens masked with label=-100)"
+  },
+  "adapter": {
+    "lora_alpha": 16,
+    "lora_dropout": 0.05,
+    "target_modules": "q_proj and v_proj in language_model branch (dynamic discovery)",
+    "target_modules_count_confirmed": 66,
+    "bias": "none",
+    "task_type": "CAUSAL_LM"
+  },
+  "evaluation": {
+    "generation": "do_sample=False, temperature=None, top_p=None, max_new_tokens=256",
+    "enable_thinking": "False (required; validated evaluator explicitly disables thinking trace)",
+    "prompt_builder": "processor.apply_chat_template (validated evaluator)",
+    "answer_extraction": "Split on #### delimiter; regex for last number; exact-match to gold",
+    "gold_extraction": "Same regex applied to GSM8K answer field"
+  },
+  "hardware": {
+    "gpu": "Kaggle T4 (15 GB VRAM)",
+    "confirmed_peak_vram_gb": 11.588,
+    "confirmed_vram_source": "LoRA r=32 seed=456 rerun"
+  },
+  "result_provenance": {
+    "primary_LOG_VERIFIED": 11,
+    "primary_MISSING": 1,
+    "primary_MISSING_configs": [
+      "dora_r8_seed456"
+    ],
+    "supplementary_LOG_VERIFIED": 7,
+    "supplementary_PROVISIONAL_PENDING_AUDIT": 2,
+    "supplementary_INCOMPLETE_UNAVAILABLE": 2,
+    "supplementary_TRAINING_COMPLETE_EVAL_INCOMPLETE": 1
+  },
+  "provisional_pending_audit": [
+    {
+      "config": "dora_r4_seed123",
+      "observed_accuracy": "5%",
+      "reason": "Anomalously low vs all other results; evaluator suspected missing enable_thinking=False",
+      "status": "PROVISIONAL_PENDING_AUDIT",
+      "action": "Excluded from all analysis until audit confirms validity or rejects"
+    },
+    {
+      "config": "dora_r4_seed456",
+      "observed_accuracy": "5%",
+      "reason": "Anomalously low vs all other results; evaluator suspected missing enable_thinking=False",
+      "status": "PROVISIONAL_PENDING_AUDIT",
+      "action": "Excluded from all analysis until audit confirms validity or rejects"
+    }
+  ],
+  "incomplete_unavailable": [
+    {
+      "config": "dora_r32_seed123",
+      "reason": "Run did not complete; exact failure mode not confirmed from available logs",
+      "status": "INCOMPLETE_UNAVAILABLE"
+    },
+    {
+      "config": "dora_r32_seed456",
+      "reason": "Run did not complete; exact failure mode not confirmed from available logs",
+      "status": "INCOMPLETE_UNAVAILABLE"
+    }
+  ],
+  "training_complete_eval_incomplete": [
+    {
+      "config": "lora_r32_seed456",
+      "reason": "Training completed (loss recorded, adapter saved, train_runtime=1243.1s); evaluation phase did not produce a validated final accuracy in the rerun session",
+      "status": "TRAINING_COMPLETE_EVAL_INCOMPLETE",
+      "confirmed_metadata": {
+        "train_runtime_sec": 1243.1,
+        "peak_vram_gb": 11.588,
+        "trainable_params": 9076736
+      }
+    }
+  ],
+  "reproducibility": {
+    "seeds_fixed": true,
+    "deterministic_generation": true,
+    "adapter_saved": true,
+    "predictions_saved": true,
+    "build_script": "python scripts/build_portfolio.py",
+    "note": "Historical results were recovered from Kaggle training logs; not re-evaluated in current session except where noted"
+  },
+  "generated": "2026-09-23"
+}

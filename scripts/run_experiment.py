@@ -1,52 +1,50 @@
 import os
 import sys
 import subprocess
-import argparse
+import logging
+import time
+import torch
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def run_pilot():
+    methods = ["lora", "dora"]
+    rank = 8
+    seed = 42
+    
+    for method in methods:
+        logger.info(f"==================================================")
+        logger.info(f"STARTING {method.upper()} PILOT (r={rank}, seed={seed})")
+        logger.info(f"==================================================")
+        
+        start_time = time.time()
+        
+        # Training
+        logger.info(f"--- Training {method.upper()} ---")
+        train_cmd = [sys.executable, "scripts/train.py", "--method", method, "--rank", str(rank), "--seed", str(seed)]
+        subprocess.run(train_cmd, check=True)
+        
+        train_time = time.time() - start_time
+        logger.info(f"Training time for {method.upper()}: {train_time / 60:.2f} minutes")
+        
+        # Evaluation
+        logger.info(f"--- Evaluating {method.upper()} ---")
+        eval_cmd = [sys.executable, "scripts/evaluate_adapter.py", "--method", method, "--rank", str(rank), "--seed", str(seed)]
+        subprocess.run(eval_cmd, check=True)
+        
+        logger.info(f"{method.upper()} pilot completed.\\n")
 
 def main():
+    import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--stage", choices=["kaggle_smoke", "baseline", "pilot", "full"], required=True)
+    parser.add_argument("--stage", type=str, choices=["pilot", "sweep", "evaluate_only"], default="pilot")
     args = parser.parse_args()
     
-    if args.stage == "kaggle_smoke":
-        # Run Kaggle smoke test
-        print("Running Kaggle Smoke Test...")
-        res = subprocess.run([sys.executable, "scripts/kaggle_smoke_test.py"])
-        if res.returncode != 0:
-            print("Smoke test failed. Halting pipeline.")
-            sys.exit(1)
-            
-    elif args.stage == "baseline":
-        # Baseline
-        print("Running Baseline...")
-        subprocess.run([sys.executable, "scripts/baseline.py"], check=True)
+    if args.stage == "pilot":
+        run_pilot()
+    else:
+        logger.error(f"Stage {args.stage} not authorized yet. Doing pilot only.")
         
-    elif args.stage == "pilot":
-        # Pilot
-        print("Running LoRA Pilot (r=8, seed=42)...")
-        subprocess.run([sys.executable, "scripts/train.py", "--method", "lora", "--rank", "8", "--seed", "42"], check=True)
-        
-        print("Running DoRA Pilot (r=8, seed=42)...")
-        subprocess.run([sys.executable, "scripts/train.py", "--method", "dora", "--rank", "8", "--seed", "42"], check=True)
-        
-        print("\nPilot runs complete. Check the results and report back before full sweep!")
-        
-    elif args.stage == "full":
-        # Full Sweep
-        print("Starting full sweep...")
-        for method in ["lora", "dora"]:
-            for rank in [4, 8, 16, 32]:
-                for seed in [42, 123, 456]:
-                    print(f"\nRunning {method} rank={rank} seed={seed}")
-                    subprocess.run([
-                        sys.executable, "scripts/train.py", 
-                        "--method", method, 
-                        "--rank", str(rank),
-                        "--seed", str(seed)
-                    ], check=True)
-                    
-        # Aggregate
-        subprocess.run([sys.executable, "scripts/aggregate_results.py"], check=True)
-
 if __name__ == "__main__":
     main()

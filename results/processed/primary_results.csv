@@ -1,0 +1,13 @@
+method,rank,seed,accuracy,status,provenance,train_loss,eval_loss,trainable_params,train_runtime_sec,eval_runtime_sec,peak_vram_gb,artifact_path,notes
+lora,8,42,0.5,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
+lora,8,123,0.5,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
+lora,8,456,0.45,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
+lora,16,42,0.4,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
+lora,16,123,0.45,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
+lora,16,456,0.45,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
+dora,8,42,0.4,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
+dora,8,123,0.5,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
+dora,8,456,,MISSING,GPU_QUOTA_EXHAUSTED,,,,,,,,Primary run pending validated rerun when GPU quota resets
+dora,16,42,0.45,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
+dora,16,123,0.45,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
+dora,16,456,0.45,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study

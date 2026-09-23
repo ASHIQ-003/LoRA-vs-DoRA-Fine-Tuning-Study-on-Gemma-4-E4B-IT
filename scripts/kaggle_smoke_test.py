@@ -142,30 +142,27 @@ def run_kaggle_smoke_test():
         results["Generation"] = "FAIL"
         print(f"Generation Error: {e}")
 
+    dora_success = False
     try:
         if model is not None:
+            if hasattr(model, "enable_input_require_grads"):
+                model.enable_input_require_grads()
+                
             from peft import LoraConfig, get_peft_model
-            lora_config = LoraConfig(r=8, target_modules=["q_proj", "v_proj"], use_dora=False)
-            model_lora = get_peft_model(model, lora_config)
+            lora_config = LoraConfig(r=8, target_modules=["q_proj.linear", "v_proj.linear"], use_dora=False)
+            model_lora = get_peft_model(model, lora_config, adapter_name="lora")
             trainable_lora = sum(p.numel() for p in model_lora.parameters() if p.requires_grad)
             if trainable_lora > 0:
                 print(f"LoRA Trainable Params: {trainable_lora}")
                 results["LoRA"] = "PASS"
-                model = model_lora.unload()
             else:
                 results["LoRA"] = "FAIL"
-        else:
-            results["LoRA"] = "FAIL"
-    except Exception as e:
-        results["LoRA"] = "FAIL"
-        print(f"LoRA Error: {e}")
 
-    dora_success = False
-    try:
-        if model is not None:
-            from peft import LoraConfig, get_peft_model
-            dora_config = LoraConfig(r=8, target_modules=["q_proj", "v_proj"], use_dora=True)
-            model_dora = get_peft_model(model, dora_config)
+            dora_config = LoraConfig(r=8, target_modules=["q_proj.linear", "v_proj.linear"], use_dora=True)
+            model_lora.add_adapter("dora", dora_config)
+            model_dora = model_lora
+            model_dora.set_adapter("dora")
+            
             trainable_dora = sum(p.numel() for p in model_dora.parameters() if p.requires_grad)
             if trainable_dora > 0:
                 print(f"DoRA Trainable Params: {trainable_dora}")
@@ -175,10 +172,14 @@ def run_kaggle_smoke_test():
             else:
                 results["DoRA"] = "FAIL"
         else:
+            results["LoRA"] = "FAIL"
             results["DoRA"] = "FAIL"
     except Exception as e:
+        import traceback
+        traceback.print_exc()
+        results["LoRA"] = "FAIL"
         results["DoRA"] = "FAIL"
-        print(f"DoRA Error: {e}")
+        print(f"LoRA/DoRA Error: {e}")
 
     try:
         if model is not None and dora_success:

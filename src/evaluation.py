@@ -16,44 +16,44 @@ def evaluate_model(model, tokenizer, dataset, max_new_tokens=256, batch_size=4):
     correct_count = 0
     total_count = len(dataset)
     
-    # Process in batches or one-by-one. One-by-one is safer for generation with varying lengths
-    # if padding isn't perfectly configured for left-padding.
     tokenizer.padding_side = "left"
     
-    for i in tqdm(range(0, total_count, batch_size), desc="Evaluating"):
-        batch = dataset[i:i+batch_size]
-        questions = batch['question']
-        gold_answers = [extract_final_answer(ans) for ans in batch['answer']]
-        
-        prompts = [build_gsm8k_prompt(q) for q in questions]
-        
-        inputs = tokenizer(prompts, return_tensors="pt", padding=True).to(model.device)
-        
-        with torch.no_grad():
-            outputs = model.generate(
-                **inputs, 
-                max_new_tokens=max_new_tokens,
-                temperature=0.0, 
-                do_sample=False,
-                pad_token_id=tokenizer.pad_token_id,
-                eos_token_id=tokenizer.eos_token_id
-            )
+    with tqdm(total=total_count, desc="Evaluating (samples)") as pbar:
+        for i in range(0, total_count, batch_size):
+            batch = dataset[i:i+batch_size]
+            questions = batch['question']
+            gold_answers = [extract_final_answer(ans) for ans in batch['answer']]
             
-        generated_texts = tokenizer.batch_decode(outputs[:, inputs['input_ids'].shape[1]:], skip_special_tokens=True)
-        
-        for q, gold, gen in zip(questions, gold_answers, generated_texts):
-            pred = extract_final_answer(gen)
-            is_correct = (pred == gold)
-            if is_correct:
-                correct_count += 1
+            prompts = [build_gsm8k_prompt(q) for q in questions]
+            
+            inputs = tokenizer(prompts, return_tensors="pt", padding=True).to(model.device)
+            
+            with torch.no_grad():
+                outputs = model.generate(
+                    **inputs, 
+                    max_new_tokens=max_new_tokens,
+                    do_sample=False,
+                    pad_token_id=tokenizer.pad_token_id,
+                    eos_token_id=tokenizer.eos_token_id
+                )
                 
-            results.append({
-                "question": q,
-                "gold_answer": gold,
-                "generated_text": gen,
-                "predicted_answer": pred,
-                "correct": is_correct
-            })
+            generated_texts = tokenizer.batch_decode(outputs[:, inputs['input_ids'].shape[1]:], skip_special_tokens=True)
+            
+            for q, gold, gen in zip(questions, gold_answers, generated_texts):
+                pred = extract_final_answer(gen)
+                is_correct = (pred == gold)
+                if is_correct:
+                    correct_count += 1
+                    
+                results.append({
+                    "question": q,
+                    "gold_answer": gold,
+                    "generated_text": gen,
+                    "predicted_answer": pred,
+                    "correct": is_correct
+                })
+                
+            pbar.update(len(questions))
             
     accuracy = correct_count / total_count if total_count > 0 else 0
     logger.info(f"Evaluation Accuracy: {accuracy:.4f}")

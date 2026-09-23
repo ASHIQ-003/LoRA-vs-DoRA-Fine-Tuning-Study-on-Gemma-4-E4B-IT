@@ -1,0 +1,25 @@
+method,rank,seed,accuracy,status,provenance,train_loss,eval_loss,trainable_params,train_runtime_sec,eval_runtime_sec,peak_vram_gb,artifact_path,notes
+lora,8,42,0.5,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
+lora,8,123,0.5,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
+lora,8,456,0.45,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
+lora,16,42,0.4,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
+lora,16,123,0.45,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
+lora,16,456,0.45,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
+dora,8,42,0.4,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
+dora,8,123,0.5,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
+dora,8,456,,MISSING,GPU_QUOTA_EXHAUSTED,,,,,,,,Primary run pending validated rerun when GPU quota resets
+dora,16,42,0.45,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
+dora,16,123,0.45,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
+dora,16,456,0.45,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
+lora,4,42,0.4,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Supplementary exploratory run
+lora,4,123,0.55,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Supplementary exploratory run
+lora,4,456,0.45,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Supplementary exploratory run
+lora,32,42,0.45,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Supplementary exploratory run
+lora,32,123,0.5,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Supplementary exploratory run
+lora,32,456,,TRAINING_COMPLETE_EVAL_INCOMPLETE,Kaggle_rerun_log,,,9076736,1243.1,,11.588,,Training confirmed complete; evaluation was not completed in the rerun session; no final accuracy assigned
+dora,4,42,0.4,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Supplementary exploratory run
+dora,4,123,,PROVISIONAL_PENDING_AUDIT,Kaggle_rerun_log,,,,,,,,Reported 5% accuracy; strong prior reason to suspect evaluator issue (enable_thinking not set); excluded from analysis pending formal audit
+dora,4,456,,PROVISIONAL_PENDING_AUDIT,Kaggle_rerun_log,,,,,,,,Reported 5% accuracy; strong prior reason to suspect evaluator issue (enable_thinking not set); excluded from analysis pending formal audit
+dora,32,42,0.45,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Supplementary exploratory run
+dora,32,123,,INCOMPLETE_UNAVAILABLE,Kaggle_sweep_log,,,,,,,,Run did not complete; exact failure mode not confirmed from available logs
+dora,32,456,,INCOMPLETE_UNAVAILABLE,Kaggle_sweep_log,,,,,,,,Run did not complete; exact failure mode not confirmed from available logs
