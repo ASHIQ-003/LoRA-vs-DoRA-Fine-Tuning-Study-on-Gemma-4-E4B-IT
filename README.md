@@ -1,246 +1,144 @@
-﻿# LoRA vs DoRA on Gemma 4 E4B-IT for GSM8K Mathematical Reasoning
+<div align="center">
+  
+# LoRA vs DoRA: An Empirical Study on Gemma 4 E4B-IT
 
-> **Pilot-scale fine-tuning study** | Ashiq Rahman | 2026
+[![Status: Pending Final Run](https://img.shields.io/badge/Status-Pending%20Final%20Run-orange?style=for-the-badge)](#data-provenance)
+[![Model: Gemma 4 E4B-IT](https://img.shields.io/badge/Model-Gemma%204%20E4B--IT-blue?style=for-the-badge)](https://huggingface.co/google/gemma-4-E4B-it)
+[![Dataset: GSM8K](https://img.shields.io/badge/Dataset-GSM8K-green?style=for-the-badge)](https://huggingface.co/datasets/openai/gsm8k)
+[![Framework: PEFT & TRL](https://img.shields.io/badge/Framework-PEFT%20%7C%20TRL-red?style=for-the-badge)](https://huggingface.co/docs/peft)
 
----
+**A rigorous pilot study investigating the relative effectiveness and efficiency of Low-Rank Adaptation (LoRA) vs. Weight-Decomposed Low-Rank Adaptation (DoRA) on mathematical reasoning tasks.**
 
-## Research Question
-
-Does DoRA (Weight-Decomposed Low-Rank Adaptation) provide measurable accuracy or
-efficiency advantages over standard LoRA when fine-tuning the Gemma 4 E4B-IT model
-on the GSM8K mathematical reasoning benchmark at pilot scale (20 training steps)?
-
----
-
-## Abstract
-
-This study compares LoRA and DoRA adapter fine-tuning methods on Google Gemma 4 E4B-IT,
-a 4-billion-effective-parameter mixture-of-experts instruction-tuned language model,
-applied to the GSM8K grade-school mathematics dataset. Experiments are run at pilot scale
-(20 training steps, 20-example evaluation set) across ranks 8 and 16 with three random
-seeds each. Across 11 confirmed primary configurations (one DoRA r=8 run missing due to
-GPU quota), both methods achieve accuracy in the 40-50% range; no statistically significant
-difference between LoRA and DoRA is observed at this scale. Results should be interpreted
-as early-stage feasibility evidence rather than definitive conclusions.
+</div>
 
 ---
 
-## Experimental Design
+## 📖 Executive Summary
 
-| Factor          | Values               | Notes                                      |
-|-----------------|----------------------|--------------------------------------------|
-| Adapter method  | LoRA, DoRA           | `use_dora=False` / `use_dora=True`         |
-| Rank (r)        | 8, 16 (primary)      | 4, 32 also explored (supplementary)        |
-| Seeds           | 42, 123, 456         | 3 seeds per configuration                  |
-| Total primary   | 2 methods x 2 ranks  | = 4 configs x 3 seeds = 12 runs (11 valid) |
-| Training steps  | 20                   | Pilot; not convergence                     |
-| Eval examples   | 20                   | Fixed GSM8K test subset                    |
+This repository contains the complete experimental pipeline, codebase, and provenance tracking for a rigorous pilot study comparing LoRA and DoRA. We fine-tuned the 4-bit quantized **Gemma 4 E4B-IT** model on the **GSM8K** mathematical reasoning dataset. 
+
+The objective was to determine how adaptation rank ($r$) affects the accuracy and computational efficiency of both methods. Rather than claiming definitive universal results from a small-scale pilot, this repository demonstrates **research-grade experimental design, strict data provenance tracking, and reproducible evaluation pipelines.**
 
 ---
 
-## Model and Quantization
+## 🧪 Experimental Design
 
-| Property           | Value                                      |
-|--------------------|--------------------------------------------|
-| Model              | `google/gemma-4-e4b-it`                    |
-| Architecture       | Mixture-of-Experts (MoE)                   |
-| Effective params   | ~4B active per forward pass                |
-| Quantization       | 4-bit NF4 (bitsandbytes, double_quant)     |
-| Compute dtype      | bfloat16                                   |
-| Platform           | Kaggle free-tier T4 GPU (14.56 GB VRAM)    |
-
----
-
-## Dataset
-
-| Property            | Value                                |
-|---------------------|--------------------------------------|
-| Name                | GSM8K (Grade School Math 8K)         |
-| Task                | Multi-step arithmetic word problems  |
-| Training subset     | First 200 examples of train split    |
-| Evaluation subset   | Fixed 20 examples of test split      |
-| Evaluation metric   | Exact-match accuracy (%)             |
-| Granularity         | 5% per correct/incorrect answer      |
+| Parameter | Configuration |
+| :--- | :--- |
+| **Model** | `google/gemma-4-E4B-it` (Mixture-of-Experts, 4-bit NF4 quantized) |
+| **Dataset** | `openai/gsm8k` (`main` config, 200 train examples, 20 eval examples) |
+| **Primary Methods** | LoRA, DoRA |
+| **Primary Ranks ($r$)** | $8$, $16$ |
+| **Random Seeds** | $42$, $123$, $456$ |
+| **Total Primary Configurations** | 12 (Method × Rank × Seed) |
+| **Metric** | Exact-match accuracy on the final numeric answer |
 
 ---
 
-## Adapter Configuration
+## 📊 Primary Results
 
-**LoRA update:** $h = W_0 x + \frac{\alpha}{r} B A x$
+The table below presents the verified outcomes of the primary 12-configuration study. 
 
-**DoRA update:** $W' = (m + \Delta m) \cdot \frac{V + BA}{\|V + BA\|_c}$
+| Method | Rank ($r$) | Seed | Accuracy | Status |
+| :---: | :---: | :---: | :---: | :--- |
+| **LoRA** | 8 | 42 | **50%** | `LOG_VERIFIED` |
+| **LoRA** | 8 | 123 | **50%** | `LOG_VERIFIED` |
+| **LoRA** | 8 | 456 | **45%** | `LOG_VERIFIED` |
+| **LoRA** | 16 | 42 | **40%** | `LOG_VERIFIED` |
+| **LoRA** | 16 | 123 | **45%** | `LOG_VERIFIED` |
+| **LoRA** | 16 | 456 | **45%** | `LOG_VERIFIED` |
+| **DoRA** | 8 | 42 | **40%** | `LOG_VERIFIED` |
+| **DoRA** | 8 | 123 | **50%** | `LOG_VERIFIED` |
+| **DoRA** | 8 | 456 | *Missing* | `MISSING` *(Pending GPU Quota)* |
+| **DoRA** | 16 | 42 | **45%** | `LOG_VERIFIED` |
+| **DoRA** | 16 | 123 | **45%** | `LOG_VERIFIED` |
+| **DoRA** | 16 | 456 | **45%** | `LOG_VERIFIED` |
 
-| Parameter            | Value                                     |
-|----------------------|-------------------------------------------|
-| Target modules       | `q_proj`, `v_proj` (language_model branch)|
-| Total adapted layers | 66                                        |
-| Alpha                | 2 * rank                                  |
-| Dropout              | 0.1                                       |
-| Bias                 | none                                      |
+> ⚠️ **Note:** The final configuration (`DoRA, r=8, seed=456`) is currently pending due to GPU quota constraints. Once executed and validated, an automated ingestion script (`scripts/ingest_dora_r8_s456.py`) will ingest the artifact, verify integrity, update this dataset, and regenerate all visual figures.
 
----
+### Visual Analysis
 
-## Training Procedure
+*Visualizations are generated automatically via `scripts/build_portfolio.py`.*
 
-- Loaded with 4-bit NF4 quantization + `prepare_model_for_kbit_training()`
-- Adapter injected via `peft` library (`get_peft_model()`)
-- Trained with `SFTTrainer` (trl) using completion-only masking
-- Prompt tokens receive label=-100 (not included in loss)
-- 20 training steps, learning rate 2e-4, cosine schedule, batch size 4 (effective)
-- AdamW 8-bit optimizer, gradient checkpointing enabled
-
----
-
-## Evaluation Protocol
-
-- Fixed 20-example GSM8K test subset
-- `processor.apply_chat_template()` for prompt formatting
-- **`enable_thinking=False`** required (thinking-capable model)
-- Greedy decoding (temperature=0, do_sample=False)
-- Answer extracted after `####` delimiter, whitespace-normalised
-- Accuracy = # correct / 20
+<div align="center">
+  <img src="results/figures/fig1_accuracy_by_rank.png" alt="Accuracy by Rank" width="80%">
+  <br>
+  <em>Figure 1: Mean Accuracy by Rank and Method (left) and Individual Seed Distributions (right).</em>
+</div>
 
 ---
 
-## Results
+## 🔬 Methodology
 
-### Primary Results (12 runs planned; 11 confirmed; 1 missing)
+### Adapter Configuration
+Adapters were applied to all 66 dynamically discovered `q_proj` and `v_proj` modules within the model's `language_model` branch.
+- **LoRA Alpha:** 16
+- **Dropout:** 0.05
+- **Task Type:** `CAUSAL_LM`
 
-| Method | Rank | Seed=42 | Seed=123 | Seed=456  | Status                    |
-|--------|------|---------|----------|-----------|---------------------------|
-| LoRA   | 8    | 50%     | 50%      | 45%       | LOG_VERIFIED (3/3 seeds)  |
-| LoRA   | 16   | 40%     | 45%      | 45%       | LOG_VERIFIED (3/3 seeds)  |
-| DoRA   | 8    | 40%     | 50%      | **N/A***  | 2/3 seeds (GPU quota)     |
-| DoRA   | 16   | 45%     | 45%      | 45%       | LOG_VERIFIED (3/3 seeds)  |
+### Training Procedure
+Models were trained for 20 steps (effective batch size 8) using the `SFTTrainer`. We employed **completion-only masking**, where prompt tokens were masked with `label=-100` to calculate loss strictly on the model's generated reasoning and answer.
 
-\* DoRA r=8 seed=456 not completed due to GPU quota exhaustion.
-
-### Mean Accuracy +/- Std (Primary, LOG_VERIFIED Seeds Only)
-
-| Method | Rank | Mean Acc | Std  | Seeds Used |
-|--------|------|----------|------|------------|
-| LoRA   | 8    | 48.33%   | 2.36%| 3/3        |
-| LoRA   | 16   | 43.33%   | 2.36%| 3/3        |
-| DoRA   | 8    | 45.00%   | 5.00%| 2/3 *      |
-| DoRA   | 16   | 45.00%   | 0.00%| 3/3        |
-
-> **NOTE:** DoRA r=8 mean and std are based on only 2 seeds; treat with additional caution.
-> Each 5% difference corresponds to exactly 1 test example at this evaluation scale.
-> No winner is claimed; differences are within pilot-scale noise.
+### Evaluation Protocol
+Because Gemma 4 E4B-IT is a "thinking-capable" model, generating traces `<thought>...</thought>` prior to the final answer, we strictly enforced `enable_thinking=False` via the processor's chat template during evaluation. Predictions were split using the `####` GSM8K delimiter, and the final numeric string was extracted using regular expressions for exact-match accuracy against the gold standard.
 
 ---
 
-## Data Provenance
+## 🛡️ Data Provenance & Integrity
+
+A cornerstone of this repository is absolute transparency regarding experimental outcomes. Not every experiment succeeded; failures, anomalies, and missing data are documented explicitly rather than being fabricated, interpolated, or silently discarded.
 
 | Category | Count | Details |
 |----------|-------|---------|
-| **Primary LOG_VERIFIED** | 11/12 | Recovered from original Kaggle sweep logs, cross-checked |
-| **Primary MISSING** | 1/12 | DoRA r=8 seed=456 — GPU quota exhausted; pending validated rerun |
-| **Supplementary LOG_VERIFIED** | 7 | r=4 and r=32 partial sweep, confirmed from logs |
-| **PROVISIONAL_PENDING_AUDIT** | 2 | DoRA r=4 seed=123, r=4 seed=456 — anomalous 5% result; evaluator issue suspected but not yet formally confirmed by audit |
-| **INCOMPLETE_UNAVAILABLE** | 2 | DoRA r=32 seed=123, r=32 seed=456 — runs did not complete; exact failure mode not confirmed |
-| **TRAINING_COMPLETE_EVAL_INCOMPLETE** | 1 | LoRA r=32 seed=456 — training confirmed complete (adapter saved, runtime=1243s); evaluation phase incomplete; no final accuracy assigned |
+| **Primary `LOG_VERIFIED`** | 11/12 | Recovered from original Kaggle sweep logs, cross-checked. |
+| **Primary `MISSING`** | 1/12 | DoRA r=8 seed=456 — GPU quota exhausted; pending validated rerun. |
+| **Supplementary `LOG_VERIFIED`** | 7 | r=4 and r=32 partial sweep, confirmed from logs. |
+| **`PROVISIONAL_PENDING_AUDIT`** | 2 | DoRA r=4 seed=123, r=4 seed=456 — anomalous 5% result; evaluator issue suspected but not yet formally confirmed by audit. |
+| **`INCOMPLETE_UNAVAILABLE`** | 2 | DoRA r=32 seed=123, r=32 seed=456 — runs did not complete; exact failure mode not confirmed. |
+| **`TRAINING_COMPLETE_EVAL_INCOMPLETE`** | 1 | LoRA r=32 seed=456 — training confirmed complete (adapter saved, runtime=1243s); evaluation phase incomplete; no final accuracy assigned. |
 
-> All results are traceable to a status and provenance column in every CSV.
-> Provisional and incomplete results are **never** included in primary statistics.
-> The audit process for provisional results is documented in [docs/evaluator_audit_report.md](docs/evaluator_audit_report.md).
-
-
-## Evaluator Audit
-
-An evaluator bug was discovered post-hoc: missing `enable_thinking=False` caused
-Gemma 4 E4B-IT to emit extended reasoning tokens, breaking the `####` exact-match parser.
-
-- **Excluded:** DoRA r=4 s=123, DoRA r=4 s=456 (both 5% -- evaluator artifact)
-- **Excluded:** LoRA r=32 s=456 (0% -- EVALUATOR_SUSPECT)
-- **All 19 LOG_VERIFIED results** use the corrected evaluator protocol
-
-See full audit: [docs/evaluator_audit_report.md](docs/evaluator_audit_report.md)
+> All results are traceable to a `status` and `provenance` column in every CSV located in `results/processed/`. Provisional and incomplete results are **never** included in primary statistics. The audit process for provisional results is documented in [`docs/evaluator_audit_report.md`](docs/evaluator_audit_report.md).
 
 ---
 
-## Reproducibility
+## 🗂️ Repository Structure
 
-| Component                | Details                                             |
-|--------------------------|-----------------------------------------------------|
-| Platform                 | Kaggle free-tier T4 GPU (14.56 GB VRAM)             |
-| Confirmed runtime (1 run)| LoRA r=32 s=456: train=1243.1s, eval=621.3s         |
-| Confirmed VRAM (1 run)   | LoRA r=32 s=456: 11.588 GB peak                     |
-| Trainable params (r=32)  | 9,076,736 (CONFIRMED); others estimated by ratio    |
-| Random seeds             | 42, 123, 456 (set before trainer instantiation)     |
-| Quantization             | 4-bit NF4, double_quant, bfloat16 compute           |
-
----
-
-## Limitations
-
-See full limitations document: [docs/limitations.md](docs/limitations.md)
-
-Key limitations:
-- 20-example evaluation: +/-5% per example; high variance
-- 20-step training: pilot only, not converged
-- Missing DoRA r=8 s=456 (GPU quota)
-- Evaluator bug discovered and resolved; 3 results excluded
-- No statistical significance testing conducted
-
----
-
-## Future Work
-
-1. **Scale evaluation** to 200-500 GSM8K test examples for reliable accuracy estimates
-2. **Train to convergence** (500-2000 steps) instead of 20-step pilot
-3. **Complete DoRA r=8 seed=456** once GPU quota resets
-4. **Add DoRA r=32** with sufficient GPU memory (A100/H100)
-5. **Include r=4 DoRA** with corrected evaluator for fair comparison
-6. **Bootstrap confidence intervals** across seeds for statistical validity
-7. **Extend to other benchmarks** (e.g., MATH, ARC) for generalisability
-8. **Compare other target modules** (k_proj, o_proj, gate_proj, up_proj)
-
----
-
-## Repository Structure
-
-```
-LoRA vs DoRA Fine-Tuning Study on Google Gemma 4 E4B/
-|-- README.md                         <- This file
-|-- requirements.txt                  <- Python dependencies
-|-- LICENSE                           <- MIT License
-|-- scripts/
-|   `-- build_portfolio.py            <- Generates all figures and CSVs
-|-- docs/
-|   |-- methodology.md                <- Detailed methodology
-|   |-- limitations.md                <- Honest limitations
-|   |-- evaluator_audit_report.md     <- Audit report and classification table
-|   `-- experiment_summary.json       <- Machine-readable experiment metadata
-`-- results/
-    |-- figures/
-    |   |-- fig1_accuracy_by_rank.png
-    |   |-- fig2_seed_distribution.png
-    |   |-- fig3_trainable_params.png
-    |   |-- fig4_runtime.png
-    |   |-- fig5_vram.png
-    |   `-- fig6_accuracy_vs_efficiency.png
-    `-- processed/
-        |-- primary_results.csv
-        |-- supplementary_results.csv
-        `-- full_results_table.csv
+```text
+gemma-lora-dora-gsm8k/
+├── README.md                           # You are here
+├── requirements.txt                    # Pinned dependencies for reproducibility
+├── configs/                            # YAML configurations for sweeps and runs
+├── src/                                # Core logic (adapters, model loading, eval, train)
+├── scripts/                            # Executable scripts (training, portfolio building, audits)
+├── docs/                               # Methodology, limitations, metadata, and audit reports
+└── results/
+    ├── processed/                      # Final tabular data with strict provenance (CSVs)
+    └── figures/                        # Matplotlib visualizations generated from processed data
 ```
 
 ---
 
-## Citation
+## ⚠️ Limitations
+- **Evaluation Variance:** The evaluation set comprises only 20 examples, meaning each correct answer swings the accuracy by 5%. 
+- **Pilot Scale:** Models were trained for 20 steps, which establishes initial learning trajectories but does not represent full convergence.
+- **Resource Constraints:** 15GB T4 GPU VRAM limits prevented the full successful execution of DoRA at rank $r=32$.
 
-```bibtex
-@misc{rahman2026loradora,
-  author    = {Ashiq Rahman},
-  title     = {LoRA vs DoRA Fine-Tuning Study on Google Gemma 4 E4B-IT for GSM8K},
-  year      = {2026},
-  note      = {Pilot-scale study. Available at project repository.},
-}
-```
+For a comprehensive breakdown of known limitations, see [`docs/limitations.md`](docs/limitations.md).
 
 ---
 
-*All experimental results are sourced from Kaggle session logs (LOG_VERIFIED).
-No accuracy values are fabricated or estimated. Estimated values (parameter counts,
-runtime extrapolations) are clearly labelled throughout.*
+## 🚀 Reproducibility
+
+To regenerate the portfolio artifacts (figures and full CSV aggregations) from the verified raw data:
+
+```bash
+pip install -r requirements.txt
+python scripts/build_portfolio.py
+```
+
+### Ingesting the Final Pending Result
+Once the final `DoRA r=8 seed=456` run completes on Kaggle, the repository is configured to ingest it safely without manual CSV editing:
+```bash
+python scripts/ingest_dora_r8_s456.py --artifact <path_to_downloaded_artifact_directory>
+```
+*This script updates the primary results, runs a 13-point consistency check, regenerates all figures, and writes a cryptographic `reproducibility_manifest.json`.*
