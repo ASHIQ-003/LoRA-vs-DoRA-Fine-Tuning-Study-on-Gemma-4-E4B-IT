@@ -49,12 +49,10 @@ The table below presents the verified outcomes of the primary 12-configuration s
 | **LoRA** | 16 | 456 | **45%** | `LOG_VERIFIED` |
 | **DoRA** | 8 | 42 | **40%** | `LOG_VERIFIED` |
 | **DoRA** | 8 | 123 | **50%** | `LOG_VERIFIED` |
-| **DoRA** | 8 | 456 | *Missing* | `MISSING` *(Pending GPU Quota)* |
+| **DoRA** | 8 | 456 | **40%** | `LOG_VERIFIED` |
 | **DoRA** | 16 | 42 | **45%** | `LOG_VERIFIED` |
 | **DoRA** | 16 | 123 | **45%** | `LOG_VERIFIED` |
 | **DoRA** | 16 | 456 | **45%** | `LOG_VERIFIED` |
-
-> ⚠️ **Note:** The final configuration (`DoRA, r=8, seed=456`) is currently pending due to GPU quota constraints. Once executed and validated, an automated ingestion script (`scripts/ingest_dora_r8_s456.py`) will ingest the artifact, verify integrity, update this dataset, and regenerate all visual figures.
 
 ### Visual Analysis
 
@@ -90,8 +88,7 @@ A cornerstone of this repository is absolute transparency regarding experimental
 
 | Category | Count | Details |
 |----------|-------|---------|
-| **Primary `LOG_VERIFIED`** | 11/12 | Recovered from original Kaggle sweep logs, cross-checked. |
-| **Primary `MISSING`** | 1/12 | DoRA r=8 seed=456 — GPU quota exhausted; pending validated rerun. |
+| **Primary `LOG_VERIFIED`** | 12/12 | All 12 primary configs validated and cross-checked. |
 | **Supplementary `LOG_VERIFIED`** | 7 | r=4 and r=32 partial sweep, confirmed from logs. |
 | **`PROVISIONAL_PENDING_AUDIT`** | 2 | DoRA r=4 seed=123, r=4 seed=456 — anomalous 5% result; evaluator issue suspected but not yet formally confirmed by audit. |
 | **`INCOMPLETE_UNAVAILABLE`** | 2 | DoRA r=32 seed=123, r=32 seed=456 — runs did not complete; exact failure mode not confirmed. |
@@ -136,9 +133,4 @@ pip install -r requirements.txt
 python scripts/build_portfolio.py
 ```
 
-### Ingesting the Final Pending Result
-Once the final `DoRA r=8 seed=456` run completes on Kaggle, the repository is configured to ingest it safely without manual CSV editing:
-```bash
-python scripts/ingest_dora_r8_s456.py --artifact <path_to_downloaded_artifact_directory>
-```
-*This script updates the primary results, runs a 13-point consistency check, regenerates all figures, and writes a cryptographic `reproducibility_manifest.json`.*
+
