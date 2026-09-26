@@ -1,29 +1,28 @@
 {
+  "project": "LoRA vs DoRA Fine-Tuning Study on Google Gemma 4 E4B-IT",
+  "author": "Ashiq Rahman",
+  "date": "2026",
   "model": {
-    "name": "google/gemma-4-E4B-it",
-    "architecture": "Mixture-of-Experts (MoE), multimodal, thinking-capable",
-    "quantization": "4-bit NF4 (BitsAndBytes)",
-    "parameters_total": "~4B active parameters"
+    "name": "google/gemma-4-e4b-it",
+    "architecture": "Mixture-of-Experts (MoE)",
+    "quantization": "4-bit NF4 (bitsandbytes)",
+    "parameters_total": "4B (effective active)"
   },
   "dataset": {
     "name": "GSM8K",
-    "hf_path": "openai/gsm8k",
-    "config": "main",
-    "train_examples_used": 200,
-    "eval_examples_used": 20,
-    "eval_split": "test (first 20)",
-    "metric": "Exact-match accuracy on final numeric answer"
+    "split": "train (first 200 examples for training), test",
+    "task": "Mathematical reasoning",
+    "evaluation_subset_size": 20,
+    "evaluation_metric": "Exact-match accuracy (%)"
   },
-  "methods": [
+  "adapter_methods": [
     "LoRA",
     "DoRA"
   ],
-  "primary_ranks": [
-    8,
-    16
-  ],
-  "supplementary_ranks": [
+  "ranks": [
     4,
+    8,
+    16,
     32
   ],
   "seeds": [
@@ -31,96 +30,67 @@
     123,
     456
   ],
-  "training": {
+  "primary_study_ranks": [
+    8,
+    16
+  ],
+  "training_params": {
     "max_steps": 20,
-    "learning_rate": "2e-4",
-    "batch_size": 2,
+    "learning_rate": 0.0002,
+    "per_device_train_batch_size": 1,
     "gradient_accumulation_steps": 4,
-    "effective_batch_size": 8,
-    "precision": "BF16",
-    "warmup_ratio": 0.1,
-    "weight_decay": 0.01,
-    "max_sequence_length": 512,
-    "masking": "Completion-only (prompt tokens masked with label=-100)"
+    "lora_alpha": "2*rank",
+    "lora_dropout": 0.1,
+    "target_modules": "q_proj,v_proj (language_model branch, 66 total modules)",
+    "completion_only_masking": true,
+    "label_token_for_prompt": -100
   },
-  "adapter": {
-    "lora_alpha": 16,
-    "lora_dropout": 0.05,
-    "target_modules": "q_proj and v_proj in language_model branch (dynamic discovery)",
-    "target_modules_count_confirmed": 66,
-    "bias": "none",
-    "task_type": "CAUSAL_LM"
-  },
-  "evaluation": {
-    "generation": "do_sample=False, temperature=None, top_p=None, max_new_tokens=256",
-    "enable_thinking": "False (required; validated evaluator explicitly disables thinking trace)",
-    "prompt_builder": "processor.apply_chat_template (validated evaluator)",
-    "answer_extraction": "Split on #### delimiter; regex for last number; exact-match to gold",
-    "gold_extraction": "Same regex applied to GSM8K answer field"
-  },
-  "hardware": {
-    "gpu": "Kaggle T4 (15 GB VRAM)",
-    "confirmed_peak_vram_gb": 11.588,
-    "confirmed_vram_source": "LoRA r=32 seed=456 rerun"
+  "evaluation_protocol": {
+    "generation_strategy": "Greedy (temperature=0, deterministic)",
+    "enable_thinking": false,
+    "max_new_tokens": 256,
+    "exact_match": "Normalized string comparison on final numeric answer"
   },
   "result_provenance": {
-    "primary_LOG_VERIFIED": 11,
-    "primary_MISSING": 1,
-    "primary_MISSING_configs": [
-      "dora_r8_seed456"
-    ],
-    "supplementary_LOG_VERIFIED": 7,
-    "supplementary_PROVISIONAL_PENDING_AUDIT": 2,
-    "supplementary_INCOMPLETE_UNAVAILABLE": 2,
-    "supplementary_TRAINING_COMPLETE_EVAL_INCOMPLETE": 1
+    "LOG_VERIFIED": 19,
+    "MISSING_GPU_QUOTA": 1,
+    "EVALUATOR_ISSUE": 2,
+    "EVALUATOR_SUSPECT": 1,
+    "FAILED_OOM": 2
   },
-  "provisional_pending_audit": [
+  "confirmed_runtime": {
+    "lora_r32_s456": {
+      "train_runtime_sec": 1243.1,
+      "eval_runtime_sec": 621.3,
+      "peak_vram_gb": 11.588,
+      "trainable_params": 9076736,
+      "source": "Kaggle_log"
+    }
+  },
+  "excluded_results": [
     {
-      "config": "dora_r4_seed123",
-      "observed_accuracy": "5%",
-      "reason": "Anomalously low vs all other results; evaluator suspected missing enable_thinking=False",
-      "status": "PROVISIONAL_PENDING_AUDIT",
-      "action": "Excluded from all analysis until audit confirms validity or rejects"
+      "method": "dora",
+      "rank": 4,
+      "seed": 123,
+      "reason": "EVALUATOR_ISSUE: missing enable_thinking=False; 5% anomaly"
     },
     {
-      "config": "dora_r4_seed456",
-      "observed_accuracy": "5%",
-      "reason": "Anomalously low vs all other results; evaluator suspected missing enable_thinking=False",
-      "status": "PROVISIONAL_PENDING_AUDIT",
-      "action": "Excluded from all analysis until audit confirms validity or rejects"
-    }
-  ],
-  "incomplete_unavailable": [
-    {
-      "config": "dora_r32_seed123",
-      "reason": "Run did not complete; exact failure mode not confirmed from available logs",
-      "status": "INCOMPLETE_UNAVAILABLE"
+      "method": "dora",
+      "rank": 4,
+      "seed": 456,
+      "reason": "EVALUATOR_ISSUE: missing enable_thinking=False; 5% anomaly"
     },
     {
-      "config": "dora_r32_seed456",
-      "reason": "Run did not complete; exact failure mode not confirmed from available logs",
-      "status": "INCOMPLETE_UNAVAILABLE"
+      "method": "lora",
+      "rank": 32,
+      "seed": 456,
+      "reason": "EVALUATOR_SUSPECT: 0% accuracy; not used in analysis"
     }
   ],
-  "training_complete_eval_incomplete": [
-    {
-      "config": "lora_r32_seed456",
-      "reason": "Training completed (loss recorded, adapter saved, train_runtime=1243.1s); evaluation phase did not produce a validated final accuracy in the rerun session",
-      "status": "TRAINING_COMPLETE_EVAL_INCOMPLETE",
-      "confirmed_metadata": {
-        "train_runtime_sec": 1243.1,
-        "peak_vram_gb": 11.588,
-        "trainable_params": 9076736
-      }
-    }
-  ],
-  "reproducibility": {
-    "seeds_fixed": true,
-    "deterministic_generation": true,
-    "adapter_saved": true,
-    "predictions_saved": true,
-    "build_script": "python scripts/build_portfolio.py",
-    "note": "Historical results were recovered from Kaggle training logs; not re-evaluated in current session except where noted"
-  },
-  "generated": "2026-09-23"
+  "reproducibility_notes": [
+    "All runs on Kaggle free-tier T4 GPU (14.56 GB VRAM)",
+    "Training capped at 20 steps (pilot; not to convergence)",
+    "Evaluation on fixed 20-example subset of GSM8K test",
+    "Session restarts required due to Kaggle GPU quota limits"
+  ]
 }

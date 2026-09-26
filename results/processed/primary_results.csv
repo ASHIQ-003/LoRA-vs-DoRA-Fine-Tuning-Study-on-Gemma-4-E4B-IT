@@ -1,13 +1,13 @@
-method,rank,seed,accuracy,status,provenance,train_loss,eval_loss,trainable_params,train_runtime_sec,eval_runtime_sec,peak_vram_gb,artifact_path,notes
-lora,8,42,0.5,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
-lora,8,123,0.5,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
-lora,8,456,0.45,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
-lora,16,42,0.4,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
-lora,16,123,0.45,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
-lora,16,456,0.45,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
-dora,8,42,0.4,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
-dora,8,123,0.5,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
-dora,8,456,,MISSING,GPU_QUOTA_EXHAUSTED,,,,,,,,Primary run pending validated rerun when GPU quota resets
-dora,16,42,0.45,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
-dora,16,123,0.45,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
-dora,16,456,0.45,LOG_VERIFIED,Kaggle_sweep_log,,,,,,,,Primary study
+method,rank,seed,accuracy,result_source,validation_status,trainable_params,trainable_params_source,train_loss,train_runtime_sec,eval_runtime_sec,peak_vram_gb,notes
+lora,8,42,50.0,Kaggle_log,LOG_VERIFIED,2269184,CONFIRMED_r32_scaled,,,,,
+lora,8,123,50.0,Kaggle_log,LOG_VERIFIED,2269184,CONFIRMED_r32_scaled,,,,,
+lora,8,456,45.0,Kaggle_log,LOG_VERIFIED,2269184,CONFIRMED_r32_scaled,,,,,
+lora,16,42,40.0,Kaggle_log,LOG_VERIFIED,4538368,CONFIRMED_r32_scaled,,,,,
+lora,16,123,45.0,Kaggle_log,LOG_VERIFIED,4538368,CONFIRMED_r32_scaled,,,,,
+lora,16,456,45.0,Kaggle_log,LOG_VERIFIED,4538368,CONFIRMED_r32_scaled,,,,,
+dora,8,42,40.0,Kaggle_log,LOG_VERIFIED,2269184,CONFIRMED_r32_scaled,,,,,
+dora,8,123,50.0,Kaggle_log,LOG_VERIFIED,2269184,CONFIRMED_r32_scaled,,,,,
+dora,8,456,,Kaggle_log,MISSING_GPU_QUOTA,2269184,CONFIRMED_r32_scaled,,,,,GPU quota exhausted; no run completed
+dora,16,42,45.0,Kaggle_log,LOG_VERIFIED,4538368,CONFIRMED_r32_scaled,,,,,
+dora,16,123,45.0,Kaggle_log,LOG_VERIFIED,4538368,CONFIRMED_r32_scaled,,,,,
+dora,16,456,45.0,Kaggle_log,LOG_VERIFIED,4538368,CONFIRMED_r32_scaled,,,,,
